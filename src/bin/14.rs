@@ -9,19 +9,19 @@ mod parser {
         IResult,
     };
 
-    fn coord(i: &str) -> IResult<&str, Coordinate<i32>> {
+    fn coord(i: &str) -> IResult<&str, Coordinate> {
         use nom::character::complete::i32;
         map(separated_pair(i32, tag(","), i32), Coordinate::from)(i)
     }
 
-    pub fn coords(i: &str) -> anyhow::Result<Vec<Coordinate<i32>>> {
+    pub fn coords(i: &str) -> anyhow::Result<Vec<Coordinate>> {
         let (_, res) = separated_list1(tag(" -> "), coord)(i).map_err(|e| e.to_owned())?;
 
         Ok(res)
     }
 }
 
-fn lines(input: &str) -> Vec<Line<i32>> {
+fn lines(input: &str) -> Vec<Line> {
     input
         .lines()
         .map(|l| {
@@ -58,7 +58,7 @@ trait SandyCoord {
     fn down(self) -> Self;
 }
 
-impl SandyCoord for Coordinate<i32> {
+impl SandyCoord for Coordinate {
     fn diag_left(self) -> Self {
         self.offset(-1, 1)
     }
@@ -73,11 +73,11 @@ impl SandyCoord for Coordinate<i32> {
 }
 
 trait SandyGrid {
-    fn move_sand(&self, coord: &mut Coordinate<i32>) -> Result<bool, OutOfBounds<i32>>;
+    fn move_sand(&self, coord: &mut Coordinate) -> Result<bool, OutOfBounds>;
 }
 
-impl SandyGrid for Grid<i32, Tile> {
-    fn move_sand(&self, coord: &mut Coordinate<i32>) -> Result<bool, OutOfBounds<i32>> {
+impl SandyGrid for Grid<Tile> {
+    fn move_sand(&self, coord: &mut Coordinate) -> Result<bool, OutOfBounds> {
         if let Tile::Empty = self.get(coord.down())? {
             *coord = coord.down();
             Ok(true)
@@ -93,20 +93,20 @@ impl SandyGrid for Grid<i32, Tile> {
     }
 }
 
-const START: Coordinate<i32> = Coordinate::new(500, 0);
+const START: Coordinate = Coordinate::new(500, 0);
 
 pub enum SandError {
     FellOffEdge,
     NowhereToGo,
 }
-impl From<OutOfBounds<i32>> for SandError {
-    fn from(_: OutOfBounds<i32>) -> Self {
+impl From<OutOfBounds> for SandError {
+    fn from(_: OutOfBounds) -> Self {
         Self::FellOffEdge
     }
 }
 
-fn drop_sand(grid: &mut Grid<i32, Tile>) -> Result<(), SandError> {
-    let mut coord: Coordinate<i32> = START;
+fn drop_sand(grid: &mut Grid<Tile>) -> Result<(), SandError> {
+    let mut coord: Coordinate = START;
     while grid.move_sand(&mut coord)? {}
     if coord == START {
         return Err(SandError::NowhereToGo);

@@ -3,26 +3,19 @@ use std::{
     ops::{Add, Sub},
 };
 
-pub trait Integer:
-    num::Integer + num::Signed + num::ToPrimitive + Clone + Copy + Display + Debug
-{
-}
-impl Integer for i32 {}
-impl Integer for i64 {}
-
 /// Abstract coordinate in a two dimensional plane
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
-pub struct Coordinate<I: Integer> {
-    pub x: I,
-    pub y: I,
+pub struct Coordinate {
+    pub x: i32,
+    pub y: i32,
 }
 
-impl<I: Integer> Coordinate<I> {
-    pub const fn new(x: I, y: I) -> Self {
+impl Coordinate {
+    pub const fn new(x: i32, y: i32) -> Self {
         Self { x, y }
     }
 
-    pub fn closest(self, other: Coordinate<I>) -> Coordinate<I> {
+    pub fn closest(self, other: Coordinate) -> Coordinate {
         let diff = other - self;
         Coordinate {
             x: self.x + diff.x.signum(),
@@ -30,7 +23,7 @@ impl<I: Integer> Coordinate<I> {
         }
     }
 
-    pub fn offset(self, xd: I, yd: I) -> Coordinate<I> {
+    pub fn offset(self, xd: i32, yd: i32) -> Coordinate {
         Coordinate {
             x: self.x + xd,
             y: self.y + yd,
@@ -38,19 +31,19 @@ impl<I: Integer> Coordinate<I> {
     }
 }
 
-impl<I: Integer> Display for Coordinate<I> {
+impl Display for Coordinate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "({}, {})", self.x, self.y)
     }
 }
 
-impl<I: Integer> From<(I, I)> for Coordinate<I> {
-    fn from((x, y): (I, I)) -> Self {
+impl From<(i32, i32)> for Coordinate {
+    fn from((x, y): (i32, i32)) -> Self {
         Self { x, y }
     }
 }
 
-impl<I: Integer> Sub for Coordinate<I> {
+impl Sub for Coordinate {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self::Output {
@@ -61,7 +54,7 @@ impl<I: Integer> Sub for Coordinate<I> {
     }
 }
 
-impl<I: Integer> Add for Coordinate<I> {
+impl Add for Coordinate {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -72,7 +65,7 @@ impl<I: Integer> Add for Coordinate<I> {
     }
 }
 
-pub fn bounds<I: Integer>(coords: &[Coordinate<I>]) -> Option<(Coordinate<I>, Coordinate<I>)> {
+pub fn bounds(coords: &[Coordinate]) -> Option<(Coordinate, Coordinate)> {
     let min_x = coords.iter().map(|c| c.x).min()?;
     let min_y = coords.iter().map(|c| c.y).min()?;
     let max_x = coords.iter().map(|c| c.x).max()?;
@@ -82,31 +75,31 @@ pub fn bounds<I: Integer>(coords: &[Coordinate<I>]) -> Option<(Coordinate<I>, Co
 }
 
 #[derive(Debug)]
-pub struct Line<I: Integer> {
-    pub start: Coordinate<I>,
-    pub end: Coordinate<I>,
+pub struct Line {
+    pub start: Coordinate,
+    pub end: Coordinate,
 }
 
-impl<I: Integer> Line<I> {
-    pub fn new(start: Coordinate<I>, end: Coordinate<I>) -> Self {
+impl Line {
+    pub fn new(start: Coordinate, end: Coordinate) -> Self {
         Self { start, end }
     }
 
-    pub fn horizontal(y: I, x_start: I, x_end: I) -> Self {
+    pub fn horizontal(y: i32, x_start: i32, x_end: i32) -> Self {
         Self {
             start: Coordinate::new(x_start, y),
             end: Coordinate::new(x_end, y),
         }
     }
 
-    pub fn vertical(x: I, y_start: I, y_end: I) -> Self {
+    pub fn vertical(x: i32, y_start: i32, y_end: i32) -> Self {
         Self {
             start: Coordinate::new(x, y_start),
             end: Coordinate::new(x, y_end),
         }
     }
 
-    pub fn coords(&self) -> Vec<Coordinate<I>> {
+    pub fn coords(&self) -> Vec<Coordinate> {
         let mut coords = Vec::new();
         let mut coord = self.start.clone();
 
@@ -120,28 +113,28 @@ impl<I: Integer> Line<I> {
     }
 }
 
-impl<I: Integer + Display> Display for Line<I> {
+impl Display for Line {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{} -> {}", self.start, self.end)
     }
 }
 
 #[derive(Debug)]
-pub struct OutOfBounds<I: Integer> {
-    coord: Coordinate<I>,
-    min: Coordinate<I>,
-    max: Coordinate<I>,
+pub struct OutOfBounds {
+    coord: Coordinate,
+    min: Coordinate,
+    max: Coordinate,
 }
 
-impl<I: Integer> std::error::Error for OutOfBounds<I> {}
+impl std::error::Error for OutOfBounds {}
 
-impl<I: Integer> OutOfBounds<I> {
-    pub fn new(coord: Coordinate<I>, min: Coordinate<I>, max: Coordinate<I>) -> Self {
+impl OutOfBounds {
+    pub fn new(coord: Coordinate, min: Coordinate, max: Coordinate) -> Self {
         Self { coord, min, max }
     }
 }
 
-impl<I: Integer> Display for OutOfBounds<I> {
+impl Display for OutOfBounds {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -152,22 +145,22 @@ impl<I: Integer> Display for OutOfBounds<I> {
 }
 
 #[derive(Debug)]
-pub struct Grid<I: Integer, T: Debug> {
+pub struct Grid<T: Debug> {
     points: Vec<T>,
-    start: Coordinate<I>,
-    end: Coordinate<I>,
+    start: Coordinate,
+    end: Coordinate,
     width: usize,
     height: usize,
 }
 
-impl<I: Integer, T: Debug> Grid<I, T> {
-    pub fn from_coords(start: Coordinate<I>, end: Coordinate<I>, val: T) -> Grid<I, T>
+impl<T: Debug> Grid<T> {
+    pub fn from_coords(start: Coordinate, end: Coordinate, val: T) -> Grid<T>
     where
         T: Clone,
     {
         let diff = end - start;
-        let width = diff.x.abs().to_usize().unwrap() + 1;
-        let height = diff.y.abs().to_usize().unwrap() + 1;
+        let width = diff.x.abs() as usize + 1;
+        let height = diff.y.abs() as usize + 1;
         let points = vec![val; width * height];
 
         Self {
@@ -187,19 +180,19 @@ impl<I: Integer, T: Debug> Grid<I, T> {
         self.height
     }
 
-    pub fn get(&self, coord: Coordinate<I>) -> Result<&T, OutOfBounds<I>> {
+    pub fn get(&self, coord: Coordinate) -> Result<&T, OutOfBounds> {
         let index = self.index(coord)?;
         Ok(&self.points[index])
     }
 
-    pub fn set(&mut self, coord: Coordinate<I>, val: T) -> Result<(), OutOfBounds<I>> {
+    pub fn set(&mut self, coord: Coordinate, val: T) -> Result<(), OutOfBounds> {
         let index = self.index(coord)?;
         self.points[index] = val;
 
         Ok(())
     }
 
-    fn index(&self, coord: Coordinate<I>) -> Result<usize, OutOfBounds<I>> {
+    fn index(&self, coord: Coordinate) -> Result<usize, OutOfBounds> {
         if coord.x < self.start.x
             || coord.y < self.start.y
             || coord.x > self.end.x
@@ -209,7 +202,7 @@ impl<I: Integer, T: Debug> Grid<I, T> {
         }
 
         let diff = coord - self.start;
-        Ok(diff.y.to_usize().unwrap() * self.width + diff.x.to_usize().unwrap())
+        Ok(diff.y as usize * self.width + diff.x as usize)
     }
 
     pub fn display(&self)
