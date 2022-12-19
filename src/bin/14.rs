@@ -78,13 +78,13 @@ trait SandyGrid {
 
 impl SandyGrid for Grid<Tile> {
     fn move_sand(&self, coord: &mut Coordinate) -> Result<bool, OutOfBounds> {
-        if let Tile::Empty = self.get(coord.down())? {
+        if let Tile::Empty = self.get_bounded(coord.down())? {
             *coord = coord.down();
             Ok(true)
-        } else if let Tile::Empty = self.get(coord.diag_left())? {
+        } else if let Tile::Empty = self.get_bounded(coord.diag_left())? {
             *coord = coord.diag_left();
             Ok(true)
-        } else if let Tile::Empty = self.get(coord.diag_right())? {
+        } else if let Tile::Empty = self.get_bounded(coord.diag_right())? {
             *coord = coord.diag_right();
             Ok(true)
         } else {
@@ -111,13 +111,16 @@ fn drop_sand(grid: &mut Grid<Tile>) -> Result<(), SandError> {
     if coord == START {
         return Err(SandError::NowhereToGo);
     }
-    grid.set(coord, Tile::Sand).unwrap();
+    grid.set_bounded(coord, Tile::Sand).unwrap();
 
     Ok(())
 }
 
 pub fn part_one(input: &str) -> Option<u32> {
-    let coords: Vec<_> = lines(input).iter().flat_map(|line| line.coords()).collect();
+    let coords: Vec<_> = lines(input)
+        .iter()
+        .flat_map(|line| line.clone().coords())
+        .collect();
     let (min, max) = {
         let (mut min, mut max) = bounds(&coords).unwrap();
         min.x -= 1;
@@ -130,7 +133,7 @@ pub fn part_one(input: &str) -> Option<u32> {
 
     let mut grid = Grid::from_coords(min, max, Tile::Empty);
     for coord in coords {
-        grid.set(coord, Tile::Wall).unwrap();
+        grid.set_bounded(coord, Tile::Wall).unwrap();
     }
     let mut count = 0;
     while let Ok(()) = drop_sand(&mut grid) {
@@ -141,7 +144,10 @@ pub fn part_one(input: &str) -> Option<u32> {
 }
 
 pub fn part_two(input: &str) -> Option<u32> {
-    let coords: Vec<_> = lines(input).iter().flat_map(|line| line.coords()).collect();
+    let coords: Vec<_> = lines(input)
+        .iter()
+        .flat_map(|line| line.clone().coords())
+        .collect();
     let (min, max) = {
         let (mut min, mut max) = bounds(&coords).unwrap();
         min.x -= 1000;
@@ -154,10 +160,10 @@ pub fn part_two(input: &str) -> Option<u32> {
 
     let mut grid = Grid::from_coords(min, max, Tile::Empty);
     for coord in coords {
-        grid.set(coord, Tile::Wall).unwrap();
+        grid.set_bounded(coord, Tile::Wall).unwrap();
     }
     for coord in Line::horizontal(max.y, min.x, max.x).coords() {
-        grid.set(coord, Tile::Wall).unwrap();
+        grid.set_bounded(coord, Tile::Wall).unwrap();
     }
     let mut count = 0;
     while let Ok(()) = drop_sand(&mut grid) {
